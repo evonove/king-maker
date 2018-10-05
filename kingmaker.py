@@ -11,6 +11,7 @@ def get_comments(project_comments_url):
     driver = webdriver.Firefox()
     driver.get(project_comments_url)
 
+    print("Comments loading", flush=True)
     # Get comments container and buttons to load more comments
     comments_container = driver.find_element_by_id("react-project-comments")
     load_reply = comments_container.find_elements_by_class_name("bttn-white")
@@ -32,6 +33,8 @@ def get_comments(project_comments_url):
 
     comments = []
 
+    print("Comments loaded", flush=True)
+    print("Scraping started", flush=True)
     for comment in comments_container.find_elements_by_tag_name("li"):
         # Comments from user that removed their pledge are hidden
         is_backer = True
@@ -67,14 +70,20 @@ def get_comments(project_comments_url):
                 "timestamp": timestamp,
             }
         )
+        # Let's give the user a bit of feedback
+        print(".", end="", flush=True)
 
     driver.quit()
+    print()
+    print("Scraping finished")
     return comments
 
 
 def create_rankings(comments, output_file):
     # Dict authors -> comments list
     authors_comments = {}
+
+    print("Saving rankings")
 
     for c in comments:
         author = c["author"]
