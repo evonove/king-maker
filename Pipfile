@@ -5,10 +5,10 @@ name = "pypi"
 
 [dev-packages]
 black = "*"
+ipdb = "*"
 
 [packages]
-scrapy = "*"
-scrapy-splash = "*"
+selenium = "*"
 
 [requires]
 python_version = "3.6"

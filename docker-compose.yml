@@ -1,7 +1,0 @@
-version: "2"
-
-services:
-    splash:
-        extends:
-            file: ./containers/base.yml
-            service: splash
