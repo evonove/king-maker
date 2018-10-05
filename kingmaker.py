@@ -72,11 +72,49 @@ def get_comments(project_comments_url):
     return comments
 
 
+def create_rankings(comments, output_file):
+    # Dict authors -> comments list
+    authors_comments = {}
+
+    for c in comments:
+        author = c["author"]
+
+        if author in authors_comments:
+            authors_comments[author].append(c)
+        else:
+            authors_comments[author] = [c]
+
+    # Sorts list of authors by number of comments
+    authors_ranking = sorted(authors_comments.items(), key=lambda item: len(item[1]), reverse=True)
+
+    # Writes rankings to output_file
+    with open(output_file, "w") as file:
+        for author in authors_ranking:
+            file.write(str(len(authors_comments[author[0]])))
+            file.write(" ")
+            file.write(author[0])
+            file.write("\n")
+
+        # Writes longest comments of top commenters
+        for author in authors_ranking[:5]:
+            file.write("========================\n\n")
+            file.write(f"Longest 5 comments of {author[0]}\n\n")
+
+            author_comments = [c["text"] for c in authors_comments[author[0]]]
+            author_comments.sort(key=len, reverse=True)
+
+            # Writes longest comments
+            for text in author_comments[:5]:
+                file.write("------------------\n\n")
+                file.write(text)
+                file.write("\n\n")
+
+
 if __name__ == "__main__":
     os.environ["MOZ_HEADLESS"] = "1"
-    if len(sys.argv) > 1:
-        print(get_comments(sys.argv[1]))
+    if len(sys.argv) > 2:
+        create_rankings(get_comments(sys.argv[1]), sys.argv[2])
     else:
         print("Usage:")
-        print("python kingmaker.py <project_comments_url>")
+        print("python kingmaker.py <project_comments_url> <output_file>")
 
