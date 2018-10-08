@@ -2,8 +2,8 @@ import sys
 import os
 import time
 
+from lxml import etree
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
 
 
 def get_comments(project_comments_url):
@@ -25,40 +25,47 @@ def get_comments(project_comments_url):
             button.click()
 
         # Waits loading of new comments
-        time.sleep(2)
+        time.sleep(1)
 
         # Gets buttons again
         load_reply = comments_container.find_elements_by_class_name("bttn-white")
         load_comments = comments_container.find_elements_by_class_name("bttn-blue")
 
     comments = []
+    page_source = driver.page_source
+    root = etree.fromstring(page_source, parser=etree.HTMLParser())
+    html_comments_container = root.xpath(".//div[@id='react-project-comments']")[0]
 
     print("Comments loaded", flush=True)
     print("Scraping started", flush=True)
-    for comment in comments_container.find_elements_by_tag_name("li"):
-        # Comments from user that removed their pledge are hidden
+    for comment in html_comments_container.xpath(".//li"):
         is_backer = True
-        try:
-            show_comment = comment.find_element_by_link_text("Show the comment.")
-            show_comment.click()
-            is_backer = False
-        except NoSuchElementException:
-            pass
+
+        # Comment is hidden skips it
+        for t in comment.itertext():
+            if "Show the comment." in t:
+                is_backer = False
+                break
+        if not is_backer:
+            continue
 
         is_superbacker = False
         is_collaborator = False
         is_creator = False
-        try:
-            author_type = comment.find_element_by_xpath(".//span[contains(@class, 'mr1')]")
+        type_spans = comment.xpath(".//span[contains(@class, 'mr1')]")
+        if len(type_spans) > 0:
+            author_type = type_spans[0].text
             is_superbacker = author_type == "Superbacker"
             is_collaborator = author_type == "Collaborator"
             is_creator = author_type == "Creator"
-        except NoSuchElementException:
-            pass
 
-        author = comment.find_element_by_xpath(".//span[contains(@class, 'mr2')]").text
-        text = comment.find_elements_by_tag_name("div")[3].text
-        timestamp = int(comment.find_element_by_tag_name("time").get_attribute("datetime"))
+        author = comment.xpath(".//span[contains(@class, 'mr2')]")[0].text
+        text = ""
+        for p in comment.xpath(".//p[contains(@class, 'type-14')]"):
+            if p.text:
+                text += p.text
+                text += "\n"
+        timestamp = int(comment.xpath(".//time")[0].get("datetime"))
         comments.append(
             {
                 "is_backer": is_backer,
@@ -122,7 +129,9 @@ def create_rankings(comments, output_file):
 if __name__ == "__main__":
     os.environ["MOZ_HEADLESS"] = "1"
     if len(sys.argv) > 2:
+        print("Starting")
         create_rankings(get_comments(sys.argv[1]), sys.argv[2])
+        print("Finished")
     else:
         print("Usage:")
         print("python kingmaker.py <project_comments_url> <output_file>")

@@ -9,6 +9,7 @@ ipdb = "*"
 
 [packages]
 selenium = "*"
+lxml = "*"
 
 [requires]
 python_version = "3.6"
